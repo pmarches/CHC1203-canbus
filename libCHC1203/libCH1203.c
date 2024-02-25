@@ -67,6 +67,62 @@ void parseCH1203Frame(uint16_t arbitrationId, uint8_t payloadLen, uint8_t* canPa
     } \
 }
 
+int monitorCanSocket(char* interfaceName){
+    int s, nbytes;
+    struct sockaddr_can addr;
+    struct ifreq ifr;
+    struct can_frame frame;
+
+    // Open socket
+    if ((s = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {
+        perror("Error opening socket");
+        return 1;
+    }
+
+    // Set up the can interface
+    strcpy(ifr.ifr_name, interfaceName);
+    ioctl(s, SIOCGIFINDEX, &ifr);
+    addr.can_family = AF_CAN;
+    addr.can_ifindex = ifr.ifr_ifindex;
+
+    // Bind the socket to the can interface
+    if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+        perror("Error binding socket to interface");
+        close(s);
+        return 1;
+    }
+#if 0
+    // Set the baudrate to 62000 Kbps
+    struct can_bittiming64 bt;
+    bt.bitrate = 62000;
+    bt.sample_point = 0.875; // You may need to adjust this value
+    if (setsockopt(s, SOL_CAN_RAW, CAN_RAW_BITTIMING, &bt, sizeof(bt)) < 0) {
+        perror("Error setting bitrate");
+        close(s);
+        return 1;
+    }
+#endif
+    while (1) {
+        // Read data in a loop
+        nbytes = read(s, &frame, sizeof(struct can_frame));
+        if (nbytes < 0) {
+            perror("Error reading from socket");
+            close(s);
+            return 1;
+        }
+
+        // Process the received data
+        printf("Received CAN frame: ID=%x, DLC=%d, Data=", frame.can_id, frame.can_dlc);
+        for (int i = 0; i < frame.can_dlc; i++) {
+            printf("%02X ", frame.data[i]);
+        }
+        printf("\n");
+    }
+
+    // Close the socket (unreachable in this example due to the infinite loop)
+    close(s);
+}
+
 int main(){
     struct CH1203Frame parseOutput;
     memset(&parseOutput, 0, sizeof(parseOutput));
@@ -82,4 +138,6 @@ int main(){
     assertEquals(true, parseOutput.isInvalid);
     parseCH1203Frame(0x6C3, 8, "\xC1\x18\x00\x00\x00\x00\x00\x00", &parseOutput);
     assertEquals(true, parseOutput.isInvalid);
+    
+    monitorCanSocket("mvcan0");
 }

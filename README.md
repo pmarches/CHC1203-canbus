@@ -1,8 +1,28 @@
 # CHC1203-canbus
-Code and documentation about Quick's CHC1203 chain counter. 
+Code and documentation about reverse engineering Quick's CHC1203 chain counter. The CHC1203 has two connectors at the back. One is for power,button up. button down and the sensor. This is NOT the one that talks canbus. There is a second connector that talks canbus.
+
+## Canbus Connector pinout
+
+![electrical](Quick-QNC-CHC-Chain-Counter-two-instruments.webp)
+
+Pin 3: Blue : GND
+Pin 4: Grey : CAN H
+Pin 5: Black: CAN L
+
+
 
 ## Canbus settings
-The CHC1203 has a built-in canbus 120Ohm terminator. So it needs to be at the start or end of bus. The canbus network speed is 62000Kbps.
+The CHC1203 has a built-in canbus 120Ohm terminator. So it needs to be at the start or end of bus. The canbus network speed is 62000Kbps. I have had reasonable success with the following canbus bit timing. 
+
+|Setting          |Value|
+|--------------------|------|
+|Clock frequency     |7.2MHz|
+|SJW                 | 1|
+|Baud rate           |62|
+|Baud rate pre scaler|72|
+|TBS1                |12|
+|TBS2                | 1|
+
 
 ## Protocol
 

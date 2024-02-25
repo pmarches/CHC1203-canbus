@@ -3,9 +3,23 @@ import time
 import paho.mqtt.client as mqtt
 import struct
 import binascii
+import threading
+from logging import debug,info,warning,error
+from ecanbridge import ecan
 
-# Canbus settings
 can_interface = 'vcan0'
+devicename='A0001'
+tcpPort=8882
+netinterface='wlp59s0'
+
+(ip, _)=ecan.discoverGatewayByName(devicename, netinterface)
+if ip is None:
+    error("No ECAN device found on the network")
+else:
+    bridgeThread = threading.Thread(target=ecan.doBridge, args=(can_interface, ip, tcpPort))
+    info("Main    : before running thread")
+    bridgeThread.start()
+
 can_bus = can.interface.Bus(can_interface, bustype='socketcan')
 print(f'Reading from can interface {can_interface}')
 

@@ -8,12 +8,13 @@ local MEASURMENT_UNIT={
 }
 
 local quickbus_proto = Proto("quickbus","Quick canbus protocol")
-quickbus_proto.fields.messagekind=ProtoField.uint16("quickbus.messagekind", "Canbus ID", base.HEX, nil)
+quickbus_proto.fields.messagekind=ProtoField.uint16("quickbus.messagekind", "Message kind", base.HEX, nil)
 
 quickbus_proto.fields.talker=ProtoField.uint16("quickbus.talker", "Talker Id", base.HEX, nil)
 quickbus_proto.fields.measurementunit=ProtoField.uint16("quickbus.measurementunit", "Chain measurement unit", base.DEC, MEASURMENT_UNIT)
 quickbus_proto.fields.chainout=ProtoField.uint32("quickbus.chainoutfeet", "Chain out", base.DEC, nil)
 quickbus_proto.fields.unknown=ProtoField.bytes("quickbus.unknown", "Unknown bytes", base.NONE)
+quickbus_proto.fields.unexpected=ProtoField.bytes("quickbus.unexpected", "Unexpected mystery bytes", base.NONE)
 
 --quick-canbus-1702295930.pcap
 
@@ -27,7 +28,13 @@ function quickbus_proto.dissector(buffer,pinfo,tree)
     toptree:add_le(quickbus_proto.fields.talker, buffer(0,2));
 
     local canIdTree=toptree:add_le(quickbus_proto.fields.messagekind, canIdBuf)
-    if(canIdBuf:le_uint()==0x06c1) then
+    if(canIdBuf:le_uint()==0x06c0) then
+        if(not (buffer(2):bytes()==ByteArray.new("78 00 01 00 01 00"))) then
+            pinfo.cols.info:set("New mystery payload "..buffer(2))
+            toptree:add_le(quickbus_proto.fields.unexpected, buffer(2))
+        end
+        toptree:add_le(quickbus_proto.fields.unknown, buffer(2))
+    elseif(canIdBuf:le_uint()==0x06c1) then
         toptree:add_le(quickbus_proto.fields.chainout, buffer(2,4));
         toptree:add_le(quickbus_proto.fields.measurementunit, buffer(6,2));
         pinfo.cols.info:set("Length of chain out ")
