@@ -4,10 +4,11 @@ exec 2>&1
 # sleep 30
 # exit
 
-# ifconfig can1 down
-# ip link set can1 up type can bitrate 250000
-# ifconfig can1 up
-# ifconfig can1
+canInterfaceName=vcan2
+
+modprobe vcan
+ip link add dev $canInterfaceName type vcan
+ip link set up $canInterfaceName
 
 if [[ $# -eq 0 ]]; then
     basedir=/data/CHC1203-canbus
@@ -16,5 +17,5 @@ else #This is the dev version, running from the local directory
 fi
 
 cd $basedir
-env PYTHONPATH=python-can-develop/:typing_extensions-4.2.0/src python3 $basedir/quickbus-ecan.py -d A0001 -p 8882 -n eth0
+env PYTHONPATH=python-can-develop/:typing_extensions-4.2.0/src python3 $basedir/quickbus-ecan.py -d A0001 -p 8882 -c $canInterfaceName
 

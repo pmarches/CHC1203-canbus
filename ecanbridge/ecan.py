@@ -568,7 +568,7 @@ def doBridge(canInterfaceName, gatewayAddress, gatewayPort):
         if(e.errno==19):
             error("No such network interface {canInterfaceName}. Maybe you need to configure it with these commands:")
             print("sudo modprobe vcan");
-            print(f"sudo ip link add dev {canInterfaceName} type vcan bitrate 250000 mtu 16")
+            print(f"sudo ip link add dev {canInterfaceName} type vcan")
             print(f"sudo ip link set up {canInterfaceName}")
         else:
             print(e)
