@@ -50,7 +50,7 @@ if __name__ == '__main__':
     cansocket=can.interface.Bus(args.caninterface, bustype='socketcan')
     logging.info(f'Reading from can interface {args.caninterface}')
 
-    mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, 'quickbus-ecan')
+    mqtt_client = mqtt.Client('quickbus-ecan')
     mqtt_port = 1883
     mqtt_client.connect(args.mqttbroker, mqtt_port)
     logging.info(f'Connected to MQTT broker {args.mqttbroker}')
