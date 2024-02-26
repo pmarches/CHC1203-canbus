@@ -1,0 +1,39 @@
+#!/bin/bash
+echo "Running Setup from $(pwd) with arguments $*"
+
+source "/data/SetupHelper/CommonResources"
+BASE_DIR=/data/quickbus
+
+#### running manually and OK to proceed - prompt for input
+if [ $scriptAction == 'NONE' ] ; then
+	# display initial message
+	echo
+	echo "quickbus"
+	
+	standardActionPrompt
+fi
+
+function cleanup ()
+{
+	echo cleanup
+}
+
+#### install code goes here
+if [ $scriptAction == 'INSTALL' ] ; then
+	logMessage "Installing quickbus"
+	
+#    updateFileSets
+
+	installService quickbus
+	cleanup
+fi
+
+
+#### uninstalling - check scriptAction again
+# if an install step failed package needs to be removed
+if [ $scriptAction == 'UNINSTALL' ] ; then
+	logMessage "Uninstalling quickbus"
+	removeService quickbus
+fi
+
+endScript
