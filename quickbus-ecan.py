@@ -36,23 +36,22 @@ if __name__ == '__main__':
         logging.error("You must specify the device name with -d")
         exit(1);
     
-    print("Discovering ecan gateway")
+    logging.info("Discovering ecan gateway")
     (ip, _)=ecan.discoverGatewayByName(args.devicename, args.netinterface)
     if ip is None:
         logging.error("No ECAN device found on the network")
         exit(1)
     else:
+        logging.info("Found ecan device at %s port %d", ip, args.port)
         bridgeThread = threading.Thread(target=ecan.doBridge, args=(args.caninterface, ip, args.port))
-        logging.info("Main    : before running thread")
+        bridgeThread.daemon=True
         bridgeThread.start()
 
     cansocket=can.interface.Bus(args.caninterface, bustype='socketcan')
     logging.info(f'Reading from can interface {args.caninterface}')
 
-    # MQTT settings
-    mqtt_port = 1883
-    mqtt_topic = 'quickbus/chaincounter'
     mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, 'quickbus-ecan')
+    mqtt_port = 1883
     mqtt_client.connect(args.mqttbroker, mqtt_port)
     logging.info(f'Connected to MQTT broker {args.mqttbroker}')
 
@@ -75,11 +74,11 @@ if __name__ == '__main__':
             "chainOutInFeet":chainOutInFeet,
             "ts":can_msg.timestamp,
         }
+        mqtt_topic = 'quickbus/chaincounter'
         mqtt_client.publish(mqtt_topic, payload=str(payloadObj), retain=False)
         mqtt_client.publish('quickbus/chainoutFeet', payload=chainOutInFeet, retain=False)
         mqtt_client.publish('quickbus/chainoutMeters', payload=chainOutInFeet*0.3048, retain=False)
 
-    # Start listening for CAN messages
     while True:
         try:
             can_msg = cansocket.recv(1)
