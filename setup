@@ -2,13 +2,13 @@
 echo "Running Setup from $(pwd) with arguments $*"
 
 source "/data/SetupHelper/CommonResources"
-BASE_DIR=/data/quickbus
+BASE_DIR=/data/CHC1203-canbus
 
 #### running manually and OK to proceed - prompt for input
 if [ $scriptAction == 'NONE' ] ; then
 	# display initial message
 	echo
-	echo "quickbus"
+	echo "CHC1203-canbus"
 	
 	standardActionPrompt
 fi
@@ -20,11 +20,11 @@ function cleanup ()
 
 #### install code goes here
 if [ $scriptAction == 'INSTALL' ] ; then
-	logMessage "Installing quickbus"
+	logMessage "Installing CHC1203-canbus"
 	
 #    updateFileSets
 
-	installService quickbus
+	installService CHC1203-canbus
 	cleanup
 fi
 
@@ -32,8 +32,8 @@ fi
 #### uninstalling - check scriptAction again
 # if an install step failed package needs to be removed
 if [ $scriptAction == 'UNINSTALL' ] ; then
-	logMessage "Uninstalling quickbus"
-	removeService quickbus
+	logMessage "Uninstalling CHC1203-canbus"
+	removeService CHC1203-canbus
 fi
 
 endScript
