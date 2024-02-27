@@ -6,7 +6,7 @@ import struct
 import binascii
 import threading
 import logging
-from ecanbridge import ecan
+from ebyteecan import ebyteecan
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -17,7 +17,7 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--netinterface',  help='Network interface to search for the CANBus gateway')
     parser.add_argument('-c', '--caninterface',  default='vcan0', help='The CANBus interface to use locally Default: vcan0')
     parser.add_argument('-i', '--ipaddress', help='IP address of the CANBus gateway')
-    parser.add_argument('-p', '--port', type=int, default=ecan.ECAN_GATEWAY_CAN1_TCP_PORT, help='TCP port of the CANBus gateway')
+    parser.add_argument('-p', '--port', type=int, default=ebyteecan.ECAN_GATEWAY_CAN1_TCP_PORT, help='TCP port of the CANBus gateway')
     parser.add_argument('-f', '--inputfile', help='TOML Configuration file to be used as input')
     parser.add_argument('-m', '--mqttbroker', default='venus.local', help='MQTT broker hostname')
     parser.add_argument('-v', '--verbose', action='count', default=0, help='Verbose output')
@@ -37,13 +37,13 @@ if __name__ == '__main__':
         exit(1);
     
     logging.info("Discovering ecan gateway")
-    (ip, _)=ecan.discoverGatewayByName(args.devicename, args.netinterface)
+    (ip, _)=ebyteecan.discoverGatewayByName(args.devicename, args.netinterface)
     if ip is None:
         logging.error("No ECAN device found on the network")
         exit(1)
     else:
         logging.info("Found ecan device at %s port %d", ip, args.port)
-        bridgeThread = threading.Thread(target=ecan.doBridge, args=(args.caninterface, ip, args.port))
+        bridgeThread = threading.Thread(target=ebyteecan.doBridge, args=(args.caninterface, ip, args.port))
         bridgeThread.daemon=True
         bridgeThread.start()
 

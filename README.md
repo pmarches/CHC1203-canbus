@@ -39,3 +39,6 @@ can0  6C3   [8]  C1 18 00 00 00 00 00 00
 
 If I connect a slave unit such as a CHC1102M I get some traffic. I think it ensures there is only one master on the canbus, but also any settings changed on the slave get propagated to the master.
 
+## TODO
+
+- The venus os sometimes configure the can interface. To do so, it has to bring the interface down. This program should recover from that. ACtually, the program should just exit and the venus watchdog will restart it.
