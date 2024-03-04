@@ -17,5 +17,5 @@ else #This is the dev version, running from the local directory
 fi
 
 cd $basedir
-env PYTHONPATH=python-can-develop/:typing_extensions-4.2.0/src python3 $basedir/quickbus-ecan.py -d A0001 -p 8882 -c $canInterfaceName
+env PYTHONPATH=python-can-develop/:typing_extensions-4.2.0/src python3 $basedir/quickbus-ecan.py -c $canInterfaceName
 
