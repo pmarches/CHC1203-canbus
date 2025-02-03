@@ -23,7 +23,7 @@ if [ $scriptAction == 'INSTALL' ] ; then
 	logMessage "Installing CHC1203-canbus"
 	
 #    updateFileSets
-	opkg install python3-pip python3-can
+# 	opkg install python3-pip python3-can
 
 	installService CHC1203-canbus
 	cleanup

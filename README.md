@@ -41,4 +41,4 @@ If I connect a slave unit such as a CHC1102M I get some traffic. I think it ensu
 
 ## TODO
 
-- The venus os sometimes configure the can interface. To do so, it has to bring the interface down. This program should recover from that. ACtually, the program should just exit and the venus watchdog will restart it.
+- Tell the CAN gateway to send only the arbitration id == 0x6C1. It is the only one we handle. Will reduce CPU load on GX device.

@@ -83,28 +83,22 @@ if __name__ == '__main__':
                 pass
     elif(args.gatewayport):
         from ebyteecan import ebyteecan
-        gatewayIp=None
+        gatewayIpAndPort=None
         if(args.gatewayip):
-            gatewayIp=args.gatewayip
+            gatewayIpAndPort=ebyteecan.GatewayIpAndPort(args.gatewayip, int(args.gatewayport))
         else:
             (gatewayIp, macAddress)=ebyteecan.discoverGatewayByName(args.gatewayname, args.netinterface)
             if gatewayIp is None:
                 logging.error('Unable to resolve IP of gateway named %s', deviceName)
                 exit(1)
             logging.info(f'Gateway ip is {gatewayIp}, mac {binascii.hexlify(macAddress,":")}')
+            gatewayIpAndPort=ebyteecan.GatewayIpAndPort(args.gatewayip, args.gatewayport)
 
-        logging.info(f'Connecting to gateway {gatewayIp}')
-        sockettogateway=ebyteecan.createTCPSocketToGateway(gatewayIp, int(args.gatewayport))
-        sockettogateway.setblocking(True)
-        DATA_FRAME_LEN=13
+        sockettogateway=ebyteecan.GatewayTCPSocket()
+        sockettogateway.connect(gatewayIpAndPort)
         while True:
-            gatewayFormatFrame=sockettogateway.recv(DATA_FRAME_LEN)
-            #logging.debug("Got a data frame from the gateway: %s", str(binascii.hexlify(gatewayFormatFrame)))
-            if(len(gatewayFormatFrame)==DATA_FRAME_LEN):
-                canMsg=ebyteecan.convertGatewayFormatToCANBusFrame(gatewayFormatFrame)
-                on_can_message(mqtt_client, canMsg)
-            else:
-                raise Exception(f'Unexpected gateway message length received {len(gatewayFormatFrame)}')
+            canMsg=sockettogateway.recv()
+            on_can_message(mqtt_client, canMsg)
 
     else:
         logging.error('You must specify either -c or -p')

@@ -4,11 +4,8 @@ exec 2>&1
 # sleep 30
 # exit
 
-canInterfaceName=vcan2
-
-modprobe vcan
-ip link add dev $canInterfaceName type vcan
-ip link set up $canInterfaceName
+# canInterfaceName=vcan2
+# ip link set up $canInterfaceName
 
 if [[ $# -eq 0 ]]; then
     basedir=/data/CHC1203-canbus
@@ -17,5 +14,5 @@ else #This is the dev version, running from the local directory
 fi
 
 cd $basedir
-env PYTHONPATH=python-can-develop/:typing_extensions-4.2.0/src python3 $basedir/quickbus-ecan.py -c $canInterfaceName
+env PYTHONPATH=$PWD python3 $basedir/quickbus-ecan.py -i 192.168.4.10 -p 8882 -v -v
 
