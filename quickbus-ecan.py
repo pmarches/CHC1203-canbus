@@ -6,8 +6,39 @@ import binascii
 import logging
 import socket
 import time
+import json
+
+from enum import Enum
+
+class AnchorState(Enum):
+    RAISED=1
+    LOWERED=2
+
+class LatLon:
+    lat=0
+    lon=0
+    def hasFix(self):
+        return self.lat!=0 and self.lon!=0
+
+class AnchoringState:
+    state=AnchorState.RAISED
+    anchorLatLon=LatLon()
+    anchorDepthFt=0
+    lastDepthFt=0
+    lastGPSFixFromGX=LatLon()
+    chainOutInFeet=0
+
+    def distanceToAnchorFt(self, boatLatLon):
+        return 123
+
+    def getScope(self):
+        if(self.anchorDepthFt==0):
+            return 0
+        return self.chainOutInFeet/self.anchorDepthFt
 
 lastPublishTS=0
+anchoringState=AnchoringState()
+
 def on_can_message(mqtt_client, can_msg):
     if can_msg is None:
         return
@@ -38,8 +69,57 @@ def on_can_message(mqtt_client, can_msg):
         #"ts":can_msg.timestamp,
     #}
     #mqtt_client.publish('quickbus/chaincounter', payload=str(payloadObj), retain=False)
-    mqtt_client.publish('quickbus/chainoutFeet', payload=chainOutInFeet, retain=False)
+    mqtt_client.publish('quickbus/chainoutFeet', payload=chainOutInFeet, retain=True)
     #mqtt_client.publish('quickbus/chainoutMeters', payload=chainOutInFeet*0.3048, retain=False)
+
+    global anchoringState
+    print(f'anchoringState.lastGPSFixFromGX.lat={anchoringState.lastGPSFixFromGX.lat} anchoringState.lastGPSFixFromGX.lon={anchoringState.lastGPSFixFromGX.lon}')
+    print(f'anchoringState.lastDepthFt={anchoringState.lastDepthFt}')
+    if(not anchoringState.lastGPSFixFromGX.hasFix() or anchoringState.lastDepthFt==0):
+        return
+
+    if(chainOutInFeet > anchoringState.chainOutInFeet):
+        anchoringState.chainOutInFeet=chainOutInFeet
+        if(anchoringState.state==AnchorState.RAISED): #Transition to anchor down
+            anchoringState.state=AnchorState.LOWERED
+            anchoringState.anchorDepthFt=anchoringState.lastDepthFt
+            anchoringState.anchorLatLon=anchoringState.lastGPSFixFromGX
+            mqtt_client.publish('quickbus/anchorLat', payload=anchoringState.lastGPSFixFromGX.lat, retain=True)
+            mqtt_client.publish('quickbus/anchorLon', payload=anchoringState.lastGPSFixFromGX.lon, retain=True)
+    elif(chainOutInFeet < anchoringState.chainOutInFeet): #Shortening chain
+        anchoringState.chainOutInFeet=chainOutInFeet
+        if(anchoringState.state==AnchorState.LOWERED): #Transition
+            if(chainOutInFeet<anchoringState.anchorDepthFt):
+                anchoringState.state=AnchorState.RAISED
+                anchoringState.lastDepthFt=0
+                anchoringState.anchorDepthFt=0
+
+    mqtt_client.publish('quickbus/scope', payload=anchoringState.getScope(), retain=True)
+
+def convertGXJsonToNumber(jsonPayloadBytes):
+    jsobObj=json.loads(jsonPayloadBytes.decode("utf-8"))
+    return jsobObj['value']
+
+def on_mqtt_message_received(client, userdata, message):
+    logging.debug(f'userdata={userdata}')
+    logging.debug(f'message={message}')
+    print(message.topic+" "+str(message.payload))
+    global anchoringState
+    if(message.topic.endswith('/Latitude')):
+        anchoringState.lastGPSFixFromGX.lat=convertGXJsonToNumber(message.payload)
+    elif(message.topic.endswith('/Longitude')):
+        anchoringState.lastGPSFixFromGX.lon=convertGXJsonToNumber(message.payload)
+    elif(message.topic.endswith('/depthInCM')):
+        anchoringState.lastDepthFt=float(message.payload.decode("utf-8"))/30.48 #Convert cm to Ft
+    else:
+        logging.warn("Unexpected MQT topic")
+
+def on_connect(client, userdata, flags, reason_code):
+    if reason_code:
+        print(f"Failed to connect: {reason_code}.")
+        return
+    client.subscribe('N/+/gps/0/Position/+')
+    client.subscribe('n2k/depth/0/depthInCM')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -51,7 +131,7 @@ if __name__ == '__main__':
     parser.add_argument('-g', '--gatewayname',  default='A0001', help='Name of the ecanebyte gateway. default: A0001')
     parser.add_argument('-i', '--gatewayip',  help='IP address of the ecanebyte gateway')
     parser.add_argument('-p', '--gatewayport',  help='Port on the ecanebyte gateway')
-    parser.add_argument('-m', '--mqttbroker', default='venus.local', help='MQTT broker hostname')
+    parser.add_argument('-m', '--mqttbroker', default='localhost', help='MQTT broker hostname')
     parser.add_argument('-v', '--verbose', action='count', default=0, help='Verbose output')
     #parser.add_argument('action', choices=['scan','reboot','readconf','writeconf','bridge', 'capture', 'test'])
     args = parser.parse_args()
@@ -64,12 +144,14 @@ if __name__ == '__main__':
 
     logging.debug(args)
     mqtt_client = mqtt.Client('quickbus-ecan')
+    mqtt_client.on_connect = on_connect
+    mqtt_client.on_message=on_mqtt_message_received
     mqtt_client.will_set('quickbus/status', payload='offline', qos=True, retain=True);
     mqtt_client.connect(args.mqttbroker, 1883)
     
     logging.info(f'Connected to MQTT broker {args.mqttbroker}')
-    mqtt_client.loop_start()
     mqtt_client.publish('quickbus/status', payload='online', qos=True, retain=True);
+    mqtt_client.loop_start()
 
     if(args.caninterface):
         import can
@@ -103,4 +185,3 @@ if __name__ == '__main__':
     else:
         logging.error('You must specify either -c or -p')
         exit(1)
-
